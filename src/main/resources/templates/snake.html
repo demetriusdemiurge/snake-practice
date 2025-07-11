@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Змейка на JavaScript</title>
+  <style>
+    body {
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #game {
+      background: #111;
+      box-shadow: 0 0 20px #000a;
+      border: 2px solid #444;
+      display: block;
+    }
+    .score {
+      color: #fff;
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 20px;
+      font-family: Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="score" id="score">Счёт: 0</div>
+    <div class="score" id="player"></div>
+    <div id="settings" style="text-align:center; margin-bottom:20px;">
+      <label>Цвет змейки: <input type="color" id="snakeColor" value="#00ff00"></label>
+      <label style="margin-left:20px;">Цвет поля: <input type="color" id="fieldColor" value="#111111"></label>
+      <label style="margin-left:20px;">Сложность:
+        <select id="difficulty">
+          <option value="easy">Лёгкий</option>
+          <option value="medium" selected>Средний</option>
+          <option value="hard">Сложный</option>
+        </select>
+      </label>
+      <button id="startBtn">Начать игру</button>
+    </div>
+    <canvas id="game" width="400" height="400"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const box = 20;
+    const canvasSize = 400;
+    let snake = [{x: 9 * box, y: 10 * box}];
+    let direction = null;
+    let food = randomPosition();
+    let score = 0;
+    let gameInterval;
+    let playerName = '';
+    let snakeColor = '#00ff00';
+    let fieldColor = '#111';
+    let gameStarted = false;
+    let difficulty = 'medium';
+    let speedMap = { easy: 300, medium: 200, hard: 50 };
+
+    function randomPosition() {
+      // Получаем все свободные клетки
+      const freeCells = [];
+      for (let x = 0; x < canvasSize; x += box) {
+        for (let y = 0; y < canvasSize; y += box) {
+          if (!snake.some(segment => segment.x === x && segment.y === y)) {
+            freeCells.push({x, y});
+          }
+        }
+      }
+      // Если свободных клеток нет — победа
+      if (freeCells.length === 0) {
+        clearInterval(gameInterval);
+        gameInterval = null;
+        alert('Поздравляем! Вы выиграли! Ваш счёт: ' + score + '\nНажмите пробел для новой игры.');
+        resetGame();
+        return {x: -box, y: -box}; // Еда вне поля, чтобы не мешала
+      }
+      // Случайная свободная клетка
+      return freeCells[Math.floor(Math.random() * freeCells.length)];
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+      else if (e.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+      else if (e.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+      else if (e.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+      else if (e.key === ' ' && !gameInterval) startGame();
+    });
+
+    function showGreeting() {
+      playerName = prompt('Добро пожаловать в игру Змейка!\nПожалуйста, введите ваше имя:', 'Игрок');
+      if (!playerName) playerName = 'Игрок';
+      document.getElementById('player').textContent = 'Игрок: ' + playerName;
+      document.getElementById('settings').style.display = '';
+    }
+
+    // Загрузка изображения еды
+    const foodImg = new Image();
+    foodImg.src = '../static/sig.png';
+
+    function draw() {
+      ctx.fillStyle = fieldColor;
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      // Рисуем змейку
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? snakeColor : shadeColor(snakeColor, -30);
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = '#222';
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+      // Рисуем еду (картинка)
+      if (foodImg.complete) {
+        ctx.drawImage(foodImg, food.x, food.y, box, box);
+      } else {
+        foodImg.onload = () => ctx.drawImage(foodImg, food.x, food.y, box, box);
+      }
+      // Счёт и имя
+      document.getElementById('score').textContent = 'Счёт: ' + score;
+      document.getElementById('player').textContent = 'Игрок: ' + playerName;
+    }
+
+    function update() {
+      let head = {x: snake[0].x, y: snake[0].y};
+      if (direction === 'LEFT') head.x -= box;
+      if (direction === 'RIGHT') head.x += box;
+      if (direction === 'UP') head.y -= box;
+      if (direction === 'DOWN') head.y += box;
+      // Телепортируем голову змейки на противоположную сторону, если вышла за границу
+      if (head.x < 0) head.x = canvasSize - box;
+      if (head.x >= canvasSize) head.x = 0;
+      if (head.y < 0) head.y = canvasSize - box;
+      if (head.y >= canvasSize) head.y = 0;
+      // Проверка на столкновение с собой
+      if (collision(head, snake)) {
+        clearInterval(gameInterval);
+        gameInterval = null;
+        alert('Игра окончена! Ваш счёт: ' + score + '\nНажмите пробел для новой игры.');
+        resetGame();
+        return;
+      }
+      // Проверка на еду
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        food = randomPosition();
+        // Если food вне поля — победа уже обработана
+        if (food.x < 0 || food.y < 0) return;
+      } else {
+        snake.pop();
+      }
+      snake.unshift(head);
+      draw();
+    }
+
+    function collision(head, arr) {
+      for (let i = 1; i < arr.length; i++) {
+        if (head.x === arr[i].x && head.y === arr[i].y) return true;
+      }
+      return false;
+    }
+
+    function startGame() {
+      if (gameInterval) return;
+      direction = 'RIGHT';
+      let speed = speedMap[difficulty] || 200;
+      gameInterval = setInterval(update, speed);
+      document.getElementById('settings').style.display = 'none';
+      gameStarted = true;
+    }
+
+    function resetGame() {
+      snake = [{x: 9 * box, y: 10 * box}];
+      direction = null;
+      food = randomPosition();
+      score = 0;
+      draw();
+    }
+
+    // Функция для затемнения цвета хвоста змейки
+    function shadeColor(color, percent) {
+      let R = parseInt(color.substring(1,3),16);
+      let G = parseInt(color.substring(3,5),16);
+      let B = parseInt(color.substring(5,7),16);
+      R = parseInt(R * (100 + percent) / 100);
+      G = parseInt(G * (100 + percent) / 100);
+      B = parseInt(B * (100 + percent) / 100);
+      R = (R<255)?R:255;  G = (G<255)?G:255;  B = (B<255)?B:255;
+      let RR = ((R.toString(16).length==1)?"0":"") + R.toString(16);
+      let GG = ((G.toString(16).length==1)?"0":"") + G.toString(16);
+      let BB = ((B.toString(16).length==1)?"0":"") + B.toString(16);
+      return "#"+RR+GG+BB;
+    }
+
+    // Обработчики настроек
+    document.getElementById('snakeColor').addEventListener('input', function() {
+      snakeColor = this.value;
+      if (gameStarted) draw();
+    });
+    document.getElementById('fieldColor').addEventListener('input', function() {
+      fieldColor = this.value;
+      if (gameStarted) draw();
+    });
+    document.getElementById('difficulty').addEventListener('change', function() {
+      difficulty = this.value;
+    });
+    document.getElementById('startBtn').addEventListener('click', function() {
+      snakeColor = document.getElementById('snakeColor').value;
+      fieldColor = document.getElementById('fieldColor').value;
+      difficulty = document.getElementById('difficulty').value;
+      startGame();
+    });
+
+    showGreeting();
+    draw();
+  </script>
+</body>
+</html>
