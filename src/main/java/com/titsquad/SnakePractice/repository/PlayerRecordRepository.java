@@ -10,12 +10,9 @@ import java.util.List;
 
 @Repository
 public interface PlayerRecordRepository extends JpaRepository<PlayerRecord, String> {
-    // Можно добавить кастомные методы запросов
 
-    // Пример кастомного метода для поиска по difficulty
     List<PlayerRecord> findByDifficulty(String difficulty);
 
-    // Пример метода для получения топ N рекордов
     @Query("SELECT p FROM PlayerRecord p ORDER BY p.record DESC LIMIT :limit")
     List<PlayerRecord> findTopRecords(@Param("limit") int limit);
 }

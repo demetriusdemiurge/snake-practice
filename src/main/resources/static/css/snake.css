@@ -1,0 +1,62 @@
+body {
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+#game-container {
+    text-align: center;
+}
+#game {
+    background: #111;
+    box-shadow: 0 0 20px #000a;
+    border: 2px solid #444;
+    display: block;
+    margin: 0 auto;
+}
+.score {
+    color: #fff;
+    font-size: 1.5em;
+    margin: 10px 0;
+}
+#settings {
+    text-align: center;
+    margin-bottom: 20px;
+    color: white;
+}
+#settings label {
+    margin: 0 10px;
+}
+#leaderboard {
+    color: white;
+    margin-top: 20px;
+    text-align: left;
+    display: inline-block;
+}
+#leaderboard h3 {
+    text-align: center;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+#leaderboard div {
+    margin: 5px 0;
+}
+button {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+button:hover {
+    background: #555;
+}
+input, select {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
